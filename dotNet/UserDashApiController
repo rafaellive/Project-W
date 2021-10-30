@@ -1,0 +1,62 @@
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Sabio.Models.Domain;
+using Sabio.Services;
+using Sabio.Services.Interfaces;
+using Sabio.Web.Controllers;
+using Sabio.Web.Models.Responses;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace Sabio.Web.Api.Controllers
+{
+    [Route("api/userdashboard")]
+    [ApiController]
+    public class UserDashApiController : BaseApiController
+    {
+        private IUserDashService _service = null;
+        private IAuthenticationService<int> _authService = null;
+
+        public UserDashApiController(IUserDashService service
+            , ILogger<UserDashApiController> logger
+            , IAuthenticationService<int> authService) : base(logger)
+        {
+            _service = service;
+            _authService = authService;
+        }
+
+        [HttpGet("{userId:int}/appointments")]
+        public ActionResult<ItemsResponse<UserAppointment>> GetAppointments(int userId)
+        {
+            int iCode = 200;
+            BaseResponse response = null;
+
+            try
+            {
+                List<UserAppointment> userAppointmentList = _service.GetAppointments(userId);
+
+
+                if (userAppointmentList == null)
+                {
+                    iCode = 400;
+                    response = new ErrorResponse("Application Resource not found.");
+                }
+                else
+                {
+                    response = new ItemsResponse<UserAppointment> { Items = userAppointmentList };
+                }
+            }
+            catch (Exception ex)
+            {
+                iCode = 500;
+                base.Logger.LogError(ex.ToString());
+                response = new ErrorResponse($"Generic Error: {ex.Message}");
+            }
+
+            return StatusCode(iCode, response);
+        }
+    }
+}
